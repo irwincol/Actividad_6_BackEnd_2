@@ -13,13 +13,21 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * Capa de Servicios (Reglas del Negocio)
+ * Aquí colocamos todo lo que nos pidieron de cálculos (horas, puntos,
+ * descuentos).
+ */
 @Service
 public class LavanderiaService {
 
-    // Precios fijos basados en el diseño propuesto
+    // Secciones de Tarifas Constantes (Se podrían sacar a una base de datos más
+    // adelante)
     private static final double PRECIO_CAMISA = 15000.0;
     private static final double PRECIO_PANTALON = 20000.0;
 
+    // Los repositorios se utilizan para conectarse e insertar en la base de datos
+    // de Prisma
     @Autowired
     private OrdenRepository ordenRepository;
 
@@ -27,19 +35,22 @@ public class LavanderiaService {
     private ClienteRepository clienteRepository;
 
     /**
-     * Procesa una nueva orden aplicando la lógica de negocio del sistema.
-     * @param orden La orden con su cliente y sus respectivas prendas
-     * @return La orden ya calculada
+     * @Transactional asegura que si algo falla, no se guarde nada a la mitad,
+     *                protegiendo que tanto Cliente como Orden se guarden completos
+     *                o "hagan Rollback".
      */
     @Transactional
     public Orden procesarNuevaOrden(Orden orden) {
-        // Cargar al cliente real desde la base de datos (por si viene solo con ID desde Postman)
+
+        // PASO EXTRA: Consultar base de datos para obtener los puntos reales del
+        // cliente
+        // ya que desde Postman puede que solo nos manden { "cliente": { "id": 1 } }
         Cliente cliente = clienteRepository.findById(orden.getCliente().getId())
-                            .orElseThrow(() -> new IllegalArgumentException("Cliente no existe"));
+                .orElseThrow(() -> new IllegalArgumentException("Cliente no existe"));
         orden.setCliente(cliente);
         List<Prenda> prendas = orden.getPrendas();
 
-        // 1. Validar que no se acepten más de 20 prendas en un solo pedido
+        // ------ LÓGICA 1: Validar máximos ------
         if (prendas == null || prendas.isEmpty()) {
             throw new IllegalArgumentException("La orden debe tener al menos una prenda.");
         }
@@ -47,20 +58,23 @@ public class LavanderiaService {
             throw new IllegalArgumentException("No se aceptan más de 20 prendas en un solo pedido.");
         }
 
-        // Configurar la fecha de recibido (asumimos la actual si no viene en el parámetro)
+        // Si desde la API no envían "cuando" se recibió, tomamos la fecha/hora actual
+        // del servidor
         if (orden.getFechaRecibido() == null) {
             orden.setFechaRecibido(LocalDateTime.now());
         }
 
-        // 2. Asignar fecha de entrega: +24 horas si < 5 prendas, +48 horas si >= 5 prendas
+        // ------ LÓGICA 2: Calcular fecha de Entrega (24hrs / 48 hrs) ------
         if (prendas.size() < 5) {
             orden.setFechaEntregaEstimada(orden.getFechaRecibido().plusHours(24));
         } else {
             orden.setFechaEntregaEstimada(orden.getFechaRecibido().plusHours(48));
         }
 
-        // 3. Calcula el total basado en tarifa fija por tipo de prenda
+        // ------ LÓGICA 3: Calcular el costo total ($) ------
         double total = 0.0;
+        // Iniciamos la variable de prenda más barata en el valor más alto posible,
+        // para que la primera prenda que lea tome ese puesto, e irla comparando.
         double prendaMasBarata = Double.MAX_VALUE;
 
         for (Prenda prenda : prendas) {
@@ -70,30 +84,34 @@ public class LavanderiaService {
             } else if (prenda.getTipo() == TipoPrenda.PANTALON) {
                 precioActual = PRECIO_PANTALON;
             }
-            
-            total += precioActual;
-            
-            // Encontrar el precio de la prenda más barata de la lista
+
+            total += precioActual; // Sumamos la prenda al carrito
+
+            // Si la prenda que leemos es más barata que el récord anterior, actualizamos la
+            // variable
             if (precioActual < prendaMasBarata) {
                 prendaMasBarata = precioActual;
             }
         }
 
-        // 4. Si el cliente tiene 50 puntos o más, aplicar descuento a la prenda más barata
+        // ------ LÓGICA 4: Aplicar descuentos si el cliente tiene 50 puntos o más
+        // ------
         if (cliente.getPuntosLealtad() != null && cliente.getPuntosLealtad() >= 50) {
+            // Se le resta el valor de la prenda más barata (Ej: -15.000 de una Camisa)
             total -= prendaMasBarata;
-            // Restar los 50 puntos canjeados al cliente
+            // Cobramos / Canjeamos los 50 puntos de su billetera virtual
             cliente.setPuntosLealtad(cliente.getPuntosLealtad() - 50);
         }
 
-        orden.setTotal(total);
+        orden.setTotal(total); // Fijamos el precio final
 
-        // 5. Sumar puntos de lealtad al cliente por cada 10,000 pesos
-        int puntosGanados = (int) (total / 10000);
+        // ------ LÓGICA 5: Otorgar Nuevos Puntos (1 x c/ $10.000) ------
+        int puntosGanados = (int) (total / 10000); // division exacta, ej: 35.000 / 10K = 3
         int puntosActuales = cliente.getPuntosLealtad() != null ? cliente.getPuntosLealtad() : 0;
         cliente.setPuntosLealtad(puntosActuales + puntosGanados);
 
-        // Guardamos las entidades en base de datos
+        // PASO FINAL: Guardar ambos cambios en PostgreSQL y retornar todo al
+        // Controlador
         clienteRepository.save(cliente);
         return ordenRepository.save(orden);
     }

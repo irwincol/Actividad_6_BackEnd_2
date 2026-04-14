@@ -35,6 +35,13 @@ public class Prenda extends BaseEntity{
     @Column(name = "instrucciones_especiales", length = 255)
     private String instruccionesEspeciales;
 
+    /**
+     * RELACIÓN (N:1): Muchas Prendas pertenecen a UNA sola Orden (Un solo recibo).
+     * - @ManyToOne: Indica la relación de "Muchos a Uno".
+     * - Esta es la parte de la tabla "Dueña" de la relación, ya que es la que 
+     *   guardará físicamente el identificador de la orden.
+     * - @JoinColumn: Define la columna física (orden_id) en el motor de base de datos.
+     */
     @ManyToOne
     @JoinColumn(name = "orden_id", nullable = false)
     private Orden orden;
