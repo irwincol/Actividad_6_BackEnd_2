@@ -1,7 +1,7 @@
-package com.control_de_lavanderia.control_de_lavanderia.controller;
+package com.example.demo_basic.controller;
 
-import com.control_de_lavanderia.control_de_lavanderia.model.Cliente;
-import com.control_de_lavanderia.control_de_lavanderia.repository.ClienteRepository;
+import com.example.demo_basic.model.entity.Cliente;
+import com.example.demo_basic.repository.ClienteRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -45,6 +45,31 @@ public class ClienteController {
     @GetMapping
     public ResponseEntity<List<Cliente>> obtenerClientes() {
         return ResponseEntity.ok(clienteRepository.findAll());
+    }
+
+    /**
+     * Endpoint para obtener un cliente específico por su ID.
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<Cliente> obtenerClientePorId(@PathVariable Long id) {
+        return clienteRepository.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * Endpoint para actualizar los datos de un cliente existente.
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<Cliente> actualizarCliente(@PathVariable Long id, @RequestBody Cliente detallesCliente) {
+        return clienteRepository.findById(id)
+                .map(cliente -> {
+                    cliente.setNombre(detallesCliente.getNombre());
+                    cliente.setTelefono(detallesCliente.getTelefono());
+                    // No actualizamos puntos de lealtad aquí para evitar trampas, o depende de tu regla
+                    return ResponseEntity.ok(clienteRepository.save(cliente));
+                })
+                .orElse(ResponseEntity.notFound().build());
     }
 
     /**

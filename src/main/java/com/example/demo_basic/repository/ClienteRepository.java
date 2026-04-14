@@ -1,6 +1,6 @@
-package com.control_de_lavanderia.control_de_lavanderia.repository;
+package com.example.demo_basic.repository;
 
-import com.control_de_lavanderia.control_de_lavanderia.model.Cliente;
+import com.example.demo_basic.model.entity.Cliente;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

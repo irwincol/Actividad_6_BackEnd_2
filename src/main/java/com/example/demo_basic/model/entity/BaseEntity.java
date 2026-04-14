@@ -1,4 +1,4 @@
-package com.control_de_lavanderia.control_de_lavanderia.model;
+package com.example.demo_basic.model.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -15,16 +15,15 @@ import java.time.LocalDateTime;
  * por las entidades hijas, sin crear una tabla propia en la BD.
  *
  * La auditoría automática es gestionada por Spring Data JPA:
- * - @CreatedDate → asigna la fecha al insertar (INSERT).
- * - @LastModifiedDate → actualiza la fecha en cada modificación (UPDATE).
+ *   - @CreatedDate    → asigna la fecha al insertar (INSERT).
+ *   - @LastModifiedDate → actualiza la fecha en cada modificación (UPDATE).
  * Requiere @EnableJpaAuditing en la clase principal de la aplicación.
  */
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter
-
-public class BaseEntity {
+public abstract class BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -37,5 +36,4 @@ public class BaseEntity {
     @LastModifiedDate
     @Column(name = "fecha_modificacion")
     private LocalDateTime fechaModificacion;
-
 }
