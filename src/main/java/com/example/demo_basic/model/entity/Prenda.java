@@ -1,6 +1,7 @@
 package com.example.demo_basic.model.entity;
 
 import com.example.demo_basic.model.enums.TipoPrenda;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -31,6 +32,7 @@ public class Prenda extends BaseEntity {
     @Column(name = "instrucciones_especiales", length = 200)
     private String instruccionesEspeciales;
 
+    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "orden_id", nullable = false)
     private Orden orden;

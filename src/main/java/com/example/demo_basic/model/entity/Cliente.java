@@ -1,5 +1,6 @@
 package com.example.demo_basic.model.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -28,6 +29,7 @@ public class Cliente extends BaseEntity {
     @Column(name = "puntos_lealtad", nullable = false)
     private Integer puntosLealtad;
     
+    @JsonIgnore
     @OneToMany(mappedBy = "cliente", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Orden> ordenes;
 }
