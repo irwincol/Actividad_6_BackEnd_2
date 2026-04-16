@@ -54,6 +54,7 @@ public class ClienteController {
                 .orElseThrow(() -> new NoSuchElementException("Cliente no encontrado con id: " + id));
         cliente.setNombre(request.getNombre());
         cliente.setTelefono(request.getTelefono());
+        cliente.setPuntosLealtad(request.getPuntosLealtad());
         return clienteRepository.save(cliente);
     }
 
